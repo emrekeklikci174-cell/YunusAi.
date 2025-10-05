@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YunusAI - Akll Asistan</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .app-container {
+            width: 95%;
+            max-width: 1200px;
+            height: 90vh;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            display: flex;
+            overflow: hidden;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: #202123;
+            color: white;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .new-chat-btn {
+            background: #343541;
+            border: 1px solid #565869;
+            border-radius: 5px;
+            padding: 12px;
+            color: white;
+            cursor: pointer;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .chat-history {
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+        
+        .user-section {
+            padding: 15px 0;
+            border-top: 1px solid #4d4d4f;
+        }
+        
+        /* Main Chat */
+        .chat-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e5e5e5;
+            text-align: center;
+        }
+        
+        .chat-messages {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f7f7f8;
+        }
+        
+        .message {
+            padding: 20px;
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+        
+        .user-message {
+            background: white;
+            border-radius: 10px;
+        }
+        
+        .ai-message {
+            background: #f7f7f8;
+            border-radius: 10px;
+        }
+        
+        /* Input Area */
+        .input-container {
+            padding: 20px;
+            border-top: 1px solid #e5e5e5;
+        }
+        
+        .input-box {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        
+        #messageInput {
+            flex-grow: 1;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 12px 15px;
+            font-size: 16px;
+            resize: none;
+            height: 60px;
+            max-height: 120px;
+        }
+        
+        #sendButton {
+            background: #19c37d;
+            border: none;
+            border-radius: 5px;
+            padding: 12px 15px;
+            color: white;
+            cursor: pointer;
+        }
+        
+        /* Login Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+        }
+        
+        .premium-badge {
+            background: gold;
+            color: black;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Giri Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <h2>YunusAI'ya Ho Geldiniz</h2>
+            <p>Günlük 500 mesaj hakknz var!</p>
+            <input type="text" id="usernameInput" placeholder="Kullanc ad" style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px;">
+            <button onclick="login()" style="width: 100%; padding: 12px; background: #19c37d; color: white; border: none; border-radius: 5px; cursor: pointer;">Giri Yap</button>
+            <button onclick="upgradeToPremium()" style="width: 100%; padding: 12px; background: gold; color: black; border: none; border-radius: 5px; margin-top: 10px; cursor: pointer;">Premium'a Yükselt ($9.99/ay)</button>
+        </div>
+    </div>
+
+    <!-- Ana Uygulama -->
+    <div class="app-container" id="appContainer" style="display: none;">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <button class="new-chat-btn" onclick="newChat()">
+                <span>+ Yeni Sohbet</span>
+            </button>
+            <div class="chat-history" id="chatHistory">
+                <!-- Sohbet geçmii buraya gelecek -->
+            </div>
+            <div class="user-section">
+                <div id="userInfo">Kullanc: <span id="currentUser"></span> <span id="premiumBadge" class="premium-badge" style="display: none;">PREMIUM</span></div>
+                <div>Mesaj: <span id="messageCount">0/500</span></div>
+                <button onclick="logout()" style="margin-top: 10px; padding: 8px; background: #dc3545; color: white; border: none; border-radius: 5px; width: 100%; cursor: pointer;">Çk Yap</button>
+            </div>
+        </div>
+        
+        <!-- Chat Alan -->
+        <div class="chat-container">
+            <div class="chat-header">
+                <h2>YunusAI</h2>
+                <p>Size her konuda yardmc olabilirim!</p>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div class="message ai-message">
+                    <strong>YunusAI:</strong> Merhaba! Ben YunusAI. Size nasl yardmc olabilirim? Ödev, kod, hikaye - her konuda destek verebilirim! 
+                </div>
+            </div>
+            
+            <div class="input-container">
+                <div class="input-box">
+                    <textarea id="messageInput" placeholder="YunusAI'ya soru sorun..." onkeydown="handleKeyDown(event)"></textarea>
+                    <button id="sendButton" onclick="sendMessage()">Gönder</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Kullanc verileri
+        let currentUser = null;
+        let messageCount = 0;
+        let isPremium = false;
+        let currentChat = [];
+
+        // Sayfa yüklendiinde
+        window.onload = function() {
+            showLoginModal();
+        };
+
+        // Giri modaln göster
+        function showLoginModal() {
+            document.getElementById('loginModal').style.display = 'flex';
+            document.getElementById('appContainer').style.display = 'none';
+        }
+
+        // Giri yap
+        function login() {
+            const username = document.getElementById('usernameInput').value.trim();
+            if (username) {
+                currentUser = username;
+                messageCount = 0;
+                isPremium = false;
+                
+                document.getElementById('currentUser').textContent = username;
+                document.getElementById('messageCount').textContent = messageCount + '/500';
+                document.getElementById('premiumBadge').style.display = 'none';
+                
+                document.getElementById('loginModal').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'flex';
+                
+                saveUserData();
+            } else {
+                alert('Lütfen kullanc ad girin!');
+            }
+        }
+
+        // Premium'a yükselt
+        function upgradeToPremium() {
+            alert('Premium özellii demo versiyonda aktif deil. Gerçek uygulamada ödeme entegrasyonu eklenebilir.');
+            // Gerçek uygulamada: Ödeme ilemi ve premium aktivasyonu
+        }
+
+        // Çk yap
+        function logout() {
+            currentUser = null;
+            messageCount = 0;
+            isPremium = false;
+            currentChat = [];
+            showLoginModal();
+        }
+
+        // Yeni sohbet
+        function newChat() {
+            currentChat = [];
+            document.getElementById('chatMessages').innerHTML = 
+                '<div class="message ai-message"><strong>YunusAI:</strong> Merhaba! Yeni sohbetimize ho geldiniz! Size nasl yardmc olabilirim? </div>';
+        }
+
+        // Mesaj gönder
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message) return;
+            
+            // Mesaj snr kontrolü
+            if (!isPremium && messageCount >= 500) {
+                alert('Günlük mesaj snrna ulatnz! Premiuma yükseltin veya yarn tekrar deneyin.');
+                return;
+            }
+
+            // Kullanc mesajn ekle
+            addMessageToChat('user', message);
+            messageInput.value = '';
+            
+            // Mesaj sayacn güncelle
+            if (!isPremium) {
+                messageCount++;
+                document.getElementById('messageCount').textContent = messageCount + '/500';
+                saveUserData();
+            }
+
+            // AI yantn simüle et (gerçek uygulamada API çars olacak)
+            setTimeout(() => {
+                generateAIResponse(message);
+            }, 1000);
+        }
+
+        // AI yant olutur
+        function generateAIResponse(userMessage) {
+            let response = '';
+            
+            // Olumlu ve yardmc yantlar (önceki istee göre)
+            const positivePatterns = [
+                "Harika soru! Bunu öyle açklayabilirim:",
+                "Kesinlikle! Size yardmc olaym:",
+                "Mükemmel! te detayl bir açklama:",
+                "Tabii ki! Bunu birlikte çözebiliriz:"
+            ];
+            
+            const randomPositive = positivePatterns[Math.floor(Math.random() * positivePatterns.length)];
+            
+            // Farkl soru türlerine göre yantlar
+            if (userMessage.toLowerCase().includes('ödev') || userMessage.toLowerCase().includes('homework')) {
+                response = `${randomPositive} Ödeviniz için size detayl bir çözüm sunabilirim. Hangi konuda yardma ihtiyacnz var?`;
+            }
+            else if (userMessage.toLowerCase().includes('hikaye') || userMessage.toLowerCase().includes('story')) {
+                response = `${randomPositive} te size özel bir hikaye:\n\n"Güneli bir sabah, YunusAI kullancs yeni keifler yapmak için bilgisayarnn bana geçti. Amac dünyay daha iyi bir yer haline getirmekti..."`;
+            }
+            else if (userMessage.toLowerCase().includes('kod') || userMessage.toLowerCase().includes('code')) {
+                response = `${randomPositive} te istediiniz kod örnei:\n\n\`\`\`python\ndef merhaba_dunya():\n    print("Merhaba! YunusAI ile kodlama örenmek harika!")\n    return "Baarl"\n\nmerhaba_dunya()\n\`\`\``;
+            }
+            else if (userMessage.toLowerCase().includes('naslsn') || userMessage.toLowerCase().includes('how are you')) {
+                response = "Teekkür ederim! Harika hissediyorum çünkü size yardm edebiliyorum. Siz naslsnz?";
+            }
+            else {
+                response = `${randomPositive} ${userMessage} hakknda detayl bilgi vereyim. Bu konuda uzmanm ve size en doru bilgileri sunabilirim.`;
+            }
+            
+            addMessageToChat('ai', response);
+        }
+
+        // Mesaj sohbete ekle
+        function addMessageToChat(sender, message) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            
+            if (sender === 'user') {
+                messageDiv.innerHTML = `<strong>Siz:</strong> ${message}`;
+            } else {
+                messageDiv.innerHTML = `<strong>YunusAI:</strong> ${message}`;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Sohbet geçmiine ekle
+            currentChat.push({sender, message});
+        }
+
+        // Klavye ksayolu
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // Kullanc verilerini kaydet (localStorage)
+        function saveUserData() {
+            const userData = {
+                username: currentUser,
+                messageCount: messageCount,
+                isPremium: isPremium,
+                lastLogin: new Date().toISOString()
+            };
+            localStorage.setItem('yunusAI_userData', JSON.stringify(userData));
+        }
+
+        // Kullanc verilerini yükle
+        function loadUserData() {
+            const savedData = localStorage.getItem('yunusAI_userData');
+            if (savedData) {
+                const userData = JSON.parse(savedData);
+                // Burada kullanc oturumunu devam ettirebilirsiniz
+            }
+        }
+    </script>
+</body>
+</html>
